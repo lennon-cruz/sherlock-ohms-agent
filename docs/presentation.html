@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sherlock Ohms Agent</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+}
+
+:root {
+  --bg: #FFFFFF;
+  --bg-secondary: #F8F8F8;
+  --surface: #FFFFFF;
+  --surface-alt: #F0EBF8;
+  --text-primary: #111111;
+  --text-secondary: #5A5A5A;
+  --text-on-surface: #111111;
+  --accent: #820AD1;
+  --accent-secondary: #5B0A91;
+  --border: #E0E0E0;
+  --font-display: 'Google Sans', 'Helvetica Neue', sans-serif;
+  --font-body: 'Google Sans', 'Helvetica Neue', sans-serif;
+  --slide-padding: 48px;
+  --radius: 4px;
+  --status-green: #00A651;
+  --status-yellow: #F5A623;
+  --status-red: #D0021B;
+  --status-gray: #8A8A8A;
+}
+
+#presentation { width: 100vw; height: 100vh; height: 100dvh; position: relative; overflow: hidden; }
+
+.slide {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: translateX(60px);
+  background: var(--bg);
+}
+.slide.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+.slide.prev { opacity: 0; transform: translateX(-60px); }
+
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+@media (prefers-reduced-motion: reduce) { .slide, .reveal { transition: none !important; } }
+
+#progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); transition: width 0.3s ease; z-index: 100; }
+#nav-dots { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100; }
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); opacity: 0.3; cursor: pointer; transition: opacity 0.2s, transform 0.2s; border: none; padding: 0; }
+.nav-dot.active { opacity: 1; transform: scale(1.4); }
+#slide-counter { position: fixed; bottom: 24px; right: 32px; font-size: 11px; color: var(--accent); opacity: 0.5; z-index: 100; font-family: var(--font-body); }
+#fullscreen-btn { position: fixed; top: 16px; right: 16px; background: transparent; border: 1px solid var(--border); color: var(--accent); border-radius: 4px; padding: 6px 10px; font-size: 11px; cursor: pointer; opacity: 0; transition: opacity 0.2s; z-index: 100; font-family: var(--font-body); }
+body:hover #fullscreen-btn { opacity: 0.6; }
+#fullscreen-btn:hover { opacity: 1 !important; }
+
+/* ============ Slide: Cover (analytical) ============ */
+.slide-cover { position: relative; padding: 0; justify-content: flex-end; }
+.slide-cover__band {
+  position: absolute; top: 0; left: 0; right: 0; height: 34%;
+  background: linear-gradient(120deg, var(--accent) 0%, var(--accent-secondary) 100%);
+}
+.slide-cover__content { position: relative; z-index: 1; padding: var(--slide-padding); flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.slide-cover__eyebrow { font-size: clamp(11px, 1.2vw, 13px); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 20px; }
+.slide-cover__title { font-size: clamp(36px, 5.5vw, 68px); font-weight: 700; line-height: 1.05; margin-bottom: 20px; color: var(--text-primary); }
+.slide-cover__title span { color: var(--accent); }
+.slide-cover__subtitle { font-size: clamp(15px, 1.8vw, 20px); color: var(--text-secondary); max-width: 62ch; line-height: 1.5; }
+.slide-cover__meta { position: absolute; top: 24px; left: var(--slide-padding); z-index: 2; color: #fff; font-size: clamp(11px, 1vw, 13px); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+
+/* ============ Slide: Architecture (custom, analytical grid) ============ */
+.slide-arch { padding: var(--slide-padding); gap: 20px; }
+.slide-arch__title { font-size: clamp(22px, 2.5vw, 32px); font-weight: 700; }
+.slide-arch__subtitle { font-size: clamp(12px, 1.2vw, 14px); color: var(--text-secondary); margin-top: -8px; }
+.flow { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.flow__row { display: flex; align-items: center; gap: 14px; }
+.flow__box {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  min-width: 150px;
+  text-align: center;
+}
+.flow__box--agent { border-left-color: var(--accent-secondary); background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.flow__box strong { display: block; font-size: clamp(12px, 1.2vw, 15px); color: var(--text-primary); }
+.flow__box span { display: block; font-size: clamp(10px, 0.95vw, 12px); color: var(--text-secondary); margin-top: 4px; }
+.flow__arrow-down { font-size: 20px; color: var(--accent); line-height: 1; }
+.flow__branches { display: flex; gap: 48px; align-items: flex-start; }
+.flow__branch { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.flow__pipeline { display: flex; align-items: center; gap: 6px; font-size: clamp(9px, 0.9vw, 11px); color: var(--text-secondary); }
+.flow__pipeline b { color: var(--accent); font-weight: 600; }
+
+/* ============ Slide: Text (run it / validation) ============ */
+.slide-text { padding: var(--slide-padding); gap: 18px; }
+.slide-text__eyebrow { font-size: clamp(10px, 1vw, 12px); text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); font-weight: 600; }
+.slide-text__title { font-size: clamp(24px, 3vw, 40px); font-weight: 700; }
+.slide-text__list { flex: 1; display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+.slide-text__list li { font-size: clamp(13px, 1.4vw, 17px); color: var(--text-secondary); line-height: 1.55; padding-left: 22px; position: relative; }
+.slide-text__list li::before { content: ''; position: absolute; left: 0; top: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.slide-text__list li b { color: var(--text-primary); }
+code.cmd { background: var(--surface-alt); color: var(--accent-secondary); padding: 2px 8px; border-radius: 3px; font-family: 'SF Mono', Consolas, monospace; font-size: 0.9em; }
+.slide-text__footer { font-size: clamp(9px, 0.9vw, 11px); color: var(--text-secondary); opacity: 0.6; border-top: 1px solid var(--border); padding-top: 12px; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="nav-dots"></div>
+<div id="slide-counter"></div>
+<button id="fullscreen-btn" onclick="toggleFullscreen()">⛶ F</button>
+
+<div id="presentation">
+
+  <!-- Slide 1: Cover -->
+  <section class="slide slide-cover">
+    <div class="slide-cover__band"></div>
+    <span class="slide-cover__meta">MRM Technical Case</span>
+    <div class="slide-cover__content">
+      <p class="slide-cover__eyebrow reveal">Agentic RAG · Reference Implementation</p>
+      <h1 class="slide-cover__title reveal reveal-delay-1">Sherlock <span>Ohms</span></h1>
+      <p class="slide-cover__subtitle reveal reveal-delay-2">
+        A minimal agent that routes questions to the right knowledge source, retrieves grounded
+        context, and answers from it — built as a working artifact for candidates to validate.
+      </p>
+    </div>
+  </section>
+
+  <!-- Slide 2: Architecture -->
+  <section class="slide slide-arch">
+    <h2 class="slide-arch__title reveal">How it's built</h2>
+    <p class="slide-arch__subtitle reveal reveal-delay-1">A plain tool-calling loop — no custom agent framework</p>
+    <div class="flow">
+      <div class="flow__row reveal reveal-delay-1">
+        <div class="flow__box"><strong>User query</strong></div>
+      </div>
+      <div class="flow__arrow-down reveal reveal-delay-1">↓</div>
+      <div class="flow__row reveal reveal-delay-2">
+        <div class="flow__box flow__box--agent"><strong>Agent</strong><span>decides which tool fits the question</span></div>
+      </div>
+      <div class="flow__arrow-down reveal reveal-delay-2">↓</div>
+      <div class="flow__branches reveal reveal-delay-3">
+        <div class="flow__branch">
+          <div class="flow__box"><strong>search_fintech_report</strong></div>
+          <div class="flow__pipeline"><b>Retrieve</b> → <b>Augment</b> → <b>Generate</b></div>
+          <div class="flow__box"><span>Chroma · World Bank Fintech report (CC BY)</span></div>
+        </div>
+        <div class="flow__branch">
+          <div class="flow__box"><strong>search_telecom_report</strong></div>
+          <div class="flow__pipeline"><b>Retrieve</b> → <b>Augment</b> → <b>Generate</b></div>
+          <div class="flow__box"><span>Chroma · ITU Telecom report (CC BY-NC-SA)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 3: Run it -->
+  <section class="slide slide-text">
+    <span class="slide-text__eyebrow reveal">Setup</span>
+    <h2 class="slide-text__title reveal reveal-delay-1">Running it</h2>
+    <ul class="slide-text__list">
+      <li class="reveal reveal-delay-1"><b>Get an OpenAI API key</b> — create a free account at platform.openai.com, open the API keys page, and generate a new secret key</li>
+      <li class="reveal reveal-delay-1"><code class="cmd">uv sync</code> — install dependencies</li>
+      <li class="reveal reveal-delay-2"><code class="cmd">cp .env.example .env</code> — paste your key into <code class="cmd">.env</code> (already gitignored — never commit or push it)</li>
+      <li class="reveal reveal-delay-3"><code class="cmd">uv run ingest</code> — downloads both reports and embeds them into local Chroma collections</li>
+      <li class="reveal reveal-delay-4"><code class="cmd">uv run agent</code> — interactive REPL, ask it anything</li>
+    </ul>
+    <p class="slide-text__footer">Never commit or push your OpenAI API key — keep it only in your local .env</p>
+  </section>
+
+</div>
+
+<script>
+class SlidePresentation {
+  constructor() {
+    this.slides = Array.from(document.querySelectorAll('.slide'));
+    this.current = 0;
+    this.total = this.slides.length;
+    this.isAnimating = false;
+    this.progressBar = document.getElementById('progress-bar');
+    this.navDotsContainer = document.getElementById('nav-dots');
+    this.counter = document.getElementById('slide-counter');
+    this.init();
+  }
+  init() { this.buildNavDots(); this.goTo(0); this.bindEvents(); }
+  buildNavDots() {
+    this.slides.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'nav-dot';
+      dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+      dot.addEventListener('click', () => this.goTo(i));
+      this.navDotsContainer.appendChild(dot);
+    });
+  }
+  goTo(index) {
+    if (this.isAnimating || index === this.current) return;
+    if (index < 0 || index >= this.total) return;
+    this.isAnimating = true;
+    this.slides[this.current].classList.remove('active');
+    this.slides[this.current].classList.add('prev');
+    setTimeout(() => { this.slides[this.current].classList.remove('prev'); }, 400);
+    this.current = index;
+    this.slides[this.current].classList.add('active');
+    this.slides[this.current].querySelectorAll('.reveal').forEach(el => {
+      el.classList.remove('visible');
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
+    });
+    this.updateUI();
+    setTimeout(() => { this.isAnimating = false; }, 400);
+  }
+  next() { this.goTo(this.current + 1); }
+  prev() { this.goTo(this.current - 1); }
+  updateUI() {
+    const pct = ((this.current + 1) / this.total) * 100;
+    this.progressBar.style.width = pct + '%';
+    document.querySelectorAll('.nav-dot').forEach((dot, i) => dot.classList.toggle('active', i === this.current));
+    if (this.counter) this.counter.textContent = `${this.current + 1} / ${this.total}`;
+  }
+  bindEvents() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); this.next(); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); this.prev(); }
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+      if (e.key === 'Home') this.goTo(0);
+      if (e.key === 'End') this.goTo(this.total - 1);
+    });
+    let wheelTimeout;
+    document.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      clearTimeout(wheelTimeout);
+      wheelTimeout = setTimeout(() => { if (e.deltaY > 0) this.next(); else this.prev(); }, 50);
+    }, { passive: false });
+    let touchStartX = 0, touchStartY = 0;
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+      const dx = touchStartX - e.changedTouches[0].clientX;
+      const dy = touchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) { if (dx > 0) this.next(); else this.prev(); }
+    }, { passive: true });
+  }
+}
+function toggleFullscreen() {
+  if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(() => {}); }
+  else { document.exitFullscreen(); }
+}
+window.INLINE_EDITING = false;
+const presentation = new SlidePresentation();
+</script>
+
+</body>
+</html>

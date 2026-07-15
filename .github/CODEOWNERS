@@ -1,0 +1,4 @@
+# Require review from @lennon-cruz on any change to this repo.
+# This file only takes effect once branch protection on `main` requires
+# code owner review — see README/setup notes for the `gh api` command.
+* @lennon-cruz

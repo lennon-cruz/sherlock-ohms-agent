@@ -28,9 +28,21 @@ query -> Agent (OpenAI tool-calling loop)
 
 Requires [uv](https://docs.astral.sh/uv/).
 
+### 1. Get an OpenAI API key
+
+1. Create a free account at [platform.openai.com](https://platform.openai.com/signup) (or sign in if you already have one).
+2. Go to the [API keys page](https://platform.openai.com/api-keys) and click **Create new secret key**.
+3. Copy the key — OpenAI only shows it once.
+
+> **Never commit or push your API key.** Keep it only in your local `.env` file, which is
+> already gitignored. If you ever paste a key into a file tracked by git, rotate/revoke it
+> from the API keys page and generate a new one.
+
+### 2. Install and run
+
 ```bash
 uv sync
-cp .env.example .env   # then add your OPENAI_API_KEY
+cp .env.example .env   # then paste your OPENAI_API_KEY into .env
 uv run ingest          # downloads both PDFs and builds the local vector stores
 uv run agent           # interactive REPL
 ```

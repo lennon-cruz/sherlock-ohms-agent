@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.python-version.local
+uv.lock.bak
+
+# secrets
+.env
+
+# generated data (regenerate with `uv run ingest`)
+data/*.pdf
+data/chroma/
+
+# OS
+.DS_Store
